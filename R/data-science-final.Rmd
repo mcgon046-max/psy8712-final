@@ -5,4 +5,14 @@ date: "2026-05-05"
 output: html_document
 ---
 
-# Script S
+# Script Settings and Resources
+
+```{r results = 'hide', message = FALSE}
+library(tidyverse)
+```
+
+# Data Import and Cleaning 
+
+```{r}
+
+```
