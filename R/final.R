@@ -166,3 +166,21 @@ topic_table <- tibble(
 )
 
 
+## CSV output for git scraping 
+topic_table |> 
+  write_csv("out/topics.csv")
+
+## Getting embeddings from local LLM model (nomic-embed-text)
+
+### Pulling the model 
+pull_model("nomic-embed-text") # pull_model actually calls the Ollama api to get it loaded into my R enviornment 
+
+### Generating the embeddings 
+raw_embeddings <- embed_text(
+  text = df_clean$review_text,
+  model = "nomic-embed-text"
+) # Embed text actually generates the vector embeddings from the text using the LLM model 
+
+
+
+
