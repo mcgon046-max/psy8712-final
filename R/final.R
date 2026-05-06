@@ -94,13 +94,75 @@ dev.off()
 
 ### Note: I had to use base R not ggsave here to get the png in order for it save correctly 
 
-### It Appears that 6 topics are the best option here. 
+### It Appears that 6 topics are the best option here. This is because it retains semantic coherence, has the highest held out likelihood, has low residuals, and isn't overfit
 
+## Topic model with k = 6
+topic_model <- stm(
+  documents = dfm2stm$documents, 
+  vocab = dfm2stm$vocab, 
+  K = 6, 
+  verbose = TRUE
+)
 
+labelTopics(topic_model)
 
+### Commented in topic output of above call: 
 
+# Topic 1 Top Words:
+#   Highest Prob: good, pay, management, salary, company, benefit, work 
+# FREX: salary, pay, good, management, bad, good company, low 
+# Lift: good company, bad, salary, low, good, pay, little 
+# Score: good company, good, pay, salary, bad, company, management 
 
+# Topic 2 Top Words:
+#   Highest Prob: work, place, place work, career, learn, great place, great 
+# FREX: place work, place, great place, work, career, learn, good place 
+# Lift: great place, place work, good place, place, career, learn, work 
+# Score: great place, place, place work, good place, career, work, learn 
 
+# Topic 3 Top Words:
+#   Highest Prob: work, hour, environment, nice, flexible, friendly, hard 
+# FREX: environment, flexible, hour, nice, work environment, friendly, work 
+# Lift: work environment, environment, flexible, nice, friendly, hour, hard 
+# Score: work environment, flexible, environment, hour, nice, work, friendly 
 
+# Topic 4 Top Words:
+#   Highest Prob: great, company, people, opportunity, culture, lot, benefit 
+# FREX: great, culture, opportunity, big, company, great company, people 
+# Lift: great company, big, culture, great, opportunity, change, company 
+# Score: great company, great, company, culture, opportunity, people, big
+
+# Topic 5 Top Words:
+#   Highest Prob: work, balance, life, work life, life balance, good work, good 
+# FREX: life, balance, work life, life balance, work, good work, growth 
+# Lift: life balance, work life, life, balance, good work, work, growth 
+# Score: life balance, good work, work life, life, balance, work, good 
+
+# Topic 6 Top Words:
+#   Highest Prob: get, much, job, time, work, can, manager 
+# FREX: get, long, job, will, manager, time, year 
+# Lift: long, will, customer, get, like, year, manager 
+# Score: long, job, get, staff, manager, will, much 
+
+### These topics are quite clean, Based on the highest prob and frex I am outputting a tibble with my proposed names
+### These names are based on the Highest prob and FREX
+### T1: heavily focused on financial aspects and managment
+### T2: Development and learning opportunities came out as best here
+### T3: These words seemed to center around the actual work enviornment - the actual "vibes" of the office 
+### T4: Words centered around the overall company culture 
+### T5: Words here are very clearly related to worklife balance 
+### T6: This topic appears to be all about grinding and stress due to managers 
+
+topic_table <- tibble(
+  Topic = paste0("Topic ", 1:6),
+  Name = c(
+    "Compensation & Management",
+    "Career Development & Learning",
+    "Work Environment & Flexibility",
+    "Company Culture & Opportunity",
+    "Work-Life Balance",
+    "Daily Grind & Managerial Stress"
+  )
+)
 
 
