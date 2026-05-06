@@ -5,7 +5,7 @@ library(caret) # ML tasks
 library(tm) # Robust text handling w/ built in corpus handling 
 library(textstem) # Lemmatizatoin
 library(RWeka) # n-gram tokenization 
-library(stm)
+library(stm) # Topic modeling 
 
 # Data Import and Cleaning 
 
@@ -21,6 +21,8 @@ df_clean <- df_import |>
   drop_na() |> # dropping NAs 
   mutate(
     review_text = paste(headline, pros, cons, sep = " ")
-  ) # Mutate to put all the review text into a single string for NLP 
+  ) |> # Mutate to put all the review text into a single string for NLP 
+  slice_sample(n = 10000) # Randomly samples rows for machine learning tasks, compute on entire data set was very high
+
 
 
