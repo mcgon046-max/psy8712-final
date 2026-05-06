@@ -17,12 +17,21 @@ df_clean <- df_import |>
     overall_rating, 
     pros,
     cons
-  ) |> # selecting text columns and ratings, 
+  ) |> # selecting text columns and ratings
+  slice_sample(n = 10000) |> # Randomly samples rows for machine learning tasks, compute on entire data set was very high
   drop_na() |> # dropping NAs 
   mutate(
     review_text = paste(headline, pros, cons, sep = " ")
   ) |> # Mutate to put all the review text into a single string for NLP 
-  slice_sample(n = 10000) # Randomly samples rows for machine learning tasks, compute on entire data set was very high
+  select(
+    overall_rating,
+    review_text
+  ) 
+
+# Analysis 
+
+## Create corpus 
+corpus <- VCorpus(VectorSource(df_clean$review_text)) # creates the corpus using VCorpus, 
 
 
 
