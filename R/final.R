@@ -1,7 +1,7 @@
 # Script Settings and Resources 
 library(tidyverse)
 library(rollama) # Best package for API calls to Ollama apparently 
-library(caret) # ML tasks 
+library(tidymodels) # ML tasks - used over caret because I want to build a tidymodels skill set 
 library(tm) # Robust text handling w/ built in corpus handling 
 library(textstem) # Lemmatizatoin
 library(RWeka) # n-gram tokenization 
@@ -31,7 +31,36 @@ df_clean <- df_import |>
 # Analysis 
 
 ## Create corpus 
-corpus <- VCorpus(VectorSource(df_clean$review_text)) # creates the corpus using VCorpus, 
+corpus <- VCorpus(VectorSource(df_clean$review_text)) # creates the corpus using VCorpus
+
+## Text pre-processing using tm and other packages 
+corpus_prep <- corpus |>
+  tm_map(content_transformer(str_to_lower)) |> # Makes everything lowercase 
+  tm_map(removeNumbers) |> # Gets rid of numbers 
+  tm_map(removePunctuation) |> # Gets rid of punctuation 
+  tm_map(content_transformer(lemmatize_words)) |> # Lemmatizing for text stems 
+  tm_map(removeWords, stopwords("en")) |> # Gets rid of stopwords 
+  tm_map(stripWhitespace) # Gets rid of the whitespace from the lemmetization and the stopword removal 
+
+## N-gram tokenizer 
+myTokenizer <- function(x) { 
+  NGramTokenizer(
+    x, Weka_control(min=1, max=2
+  )) 
+}
+
+## Document term matrix creation (makes text a matrix)
+DTM <- DocumentTermMatrix(
+  corpus_prep, 
+  control = list(tokenize = myTokenizer)
+  )
+
+## Removing sparse terms 
+slimmed_dtm <- removeSparseTerms(DTM, .95) # set the threshhold to .90 meaning terms must appear in 95% of docs 
+
+## Converting back to dataframe 
+
+
 
 
 
