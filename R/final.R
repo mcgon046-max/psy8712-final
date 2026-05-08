@@ -245,6 +245,7 @@ rq1_df <- df_clean |>
 
 write_rds(rq1_df, "data/rq1_prepped.rds") # save rds for data file incase of crash 
 
+rq1_df <- read_rds("data/rq1_prepped.rds") # saving the variable for checkingpointing 
 #### RQ2: Topics vs. Pure tokens 
 rq2_df <- df_clean |>
   select(
@@ -262,6 +263,8 @@ rq2_df <- df_clean |>
 
 write_rds(rq2_df, "data/rq2_prepped.rds") # save rds for data file incase of crash 
 
+rq2_df <- read_rds("data/rq2_prepped.rds") # same as above 
+
 #### RQ3: Embeddings vs. Topics vs. Both combined 
 rq3_df <- df_clean |>
   select(
@@ -278,6 +281,8 @@ rq3_df <- df_clean |>
   )
 
 write_rds(rq3_df, "data/rq3_prepped.rds") # save rds for data file incase of crash 
+
+rq3_df <- read_rds("data/rq3_prepped.rds") # same as above 
 
 ##### NOTE: I joined up the tables using an inner join to ensure that 
 ##### everything was matched up and preped for the ML task. 

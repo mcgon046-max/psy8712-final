@@ -3,3 +3,6 @@
 .RData
 .Ruserdata
 data/glassdoor_reviews.csv
+data/rq1_prepped.rds
+data/rq2_prepped.rds
+data/rq3_prepped.rds
