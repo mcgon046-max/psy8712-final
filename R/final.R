@@ -390,5 +390,62 @@ enet_res_emb_rq1 <- tune_grid(
   grid = enet_grid_rq1
 ) # fits only embeddings 
 
+### RQ1 metric extraction 
 
+# OLS Metrics (Tokens)
+ols_tok_rmse_rq1 <- collect_metrics(ols_res_tok_rq1) |> # collect metrics in order to pull the trained model outputs 
+  filter(.metric == "rmse") |> # only looks at RMSE
+  pull(mean) # Pulls the mean of the 10 cross-validated models 
+
+ols_tok_rsq_rq1  <- collect_metrics(ols_res_tok_rq1) |> # same
+  filter(.metric == "rsq") |> # looks at R^2
+  pull(mean) # same
+
+# Extract OLS Metrics (Embeddings)
+ols_emb_rmse_rq1 <- collect_metrics(ols_res_embed_rq1) |> 
+  filter(.metric == "rmse") |> 
+  pull(mean)
+
+ols_emb_rsq_rq1  <- collect_metrics(ols_res_embed_rq1) |> 
+  filter(.metric == "rsq") |> 
+  pull(mean) # same as above 
+
+# Best Elastic Net metrics (tokens)
+enet_tok_rmse_rq1 <- show_best(
+  enet_res_tok_rq1, metric = "rmse", n = 1 # looks for best rmse
+  ) |> 
+  pull(mean)
+
+enet_tok_rsq_rq1  <- show_best(
+  enet_res_tok_rq1, metric = "rsq", n = 1 # same but for R^2
+  ) |> 
+  pull(mean)
+
+# Best Elastic Net metrics (embeddings)
+enet_emb_rmse_rq1 <- show_best(
+  enet_res_emb_rq1, metric = "rmse", n = 1
+  ) |> 
+  pull(mean)
+
+enet_emb_rsq_rq1  <- show_best(
+  enet_res_emb_rq1, metric = "rsq", n = 1
+  ) |> 
+  pull(mean)
+
+## final results table for RQ1:
+
+results_table_rq1 <- tibble(
+  Model = c("OLS", "OLS", "Elastic Net", "Elastic Net"),
+  Feature_Set = c("Tokens Only", "Embeddings Only", "Tokens Only", "Embeddings Only"),
+  RMSE = c(ols_tok_rmse_rq1, ols_emb_rmse_rq1, enet_tok_rmse_rq1, enet_emb_rmse_rq1),
+  R_Squared = c(ols_tok_rsq_rq1, ols_emb_rsq_rq1, enet_tok_rsq_rq1, enet_emb_rsq_rq1)
+) |> 
+  arrange(RMSE) # Sorts from lowest error to highest error
+
+# Print the final output
+print(results_table_rq1)
+
+# saving the csv 
+results_table_rq1 |>
+  write_csv("out/rq1_results.csv")
 
