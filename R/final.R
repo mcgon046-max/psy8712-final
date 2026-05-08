@@ -626,7 +626,125 @@ enet_res_top_rq2 <- tune_grid(
   grid = enet_grid_rq2
 ) # same as above
 
+### RQ2 metric extraction 
+# OLS metrics (Tokens)
+ols_tok_rmse_rq2 <- collect_metrics(ols_res_tok_rq2) |> 
+  filter(.metric == "rmse") |> 
+  pull(mean) # same as above 
+
+ols_tok_rsq_rq2  <- collect_metrics(ols_res_tok_rq2) |> 
+  filter(.metric == "rsq") |> 
+  pull(mean) # same as above
+
+# OLS metrics (Topics)
+ols_top_rmse_rq2 <- collect_metrics(ols_res_top_rq2) |> 
+  filter(.metric == "rmse") |> 
+  pull(mean) # same as above 
+
+ols_top_rsq_rq2  <- collect_metrics(ols_res_top_rq2) |> 
+  filter(.metric == "rsq") |> 
+  pull(mean) # same as above 
+
+# Best Elastic Net metrics (tokens)
+enet_tok_rmse_rq2 <- show_best(
+  enet_res_tok_rq2, metric = "rmse", n = 1 
+) |> 
+  pull(mean) # same as above
+
+enet_tok_rsq_rq2  <- show_best(
+  enet_res_tok_rq2, metric = "rsq", n = 1 
+) |> 
+  pull(mean) # same as above
+
+# Best Elastic Net metrics (topics)
+enet_top_rmse_rq2 <- show_best(
+  enet_res_top_rq2, metric = "rmse", n = 1
+) |> 
+  pull(mean) # same as above
+
+enet_top_rsq_rq2  <- show_best(
+  enet_res_top_rq2, metric = "rsq", n = 1
+) |> 
+  pull(mean) # same as above
+
+### Train vs. Test
+#### OLS - tokens
+final_fit_ols_tok_rq2 <- last_fit(
+  ols_wf_rq2_tok, 
+  split = data_split_rq2) # same as above 
+
+#### OLS - topics
+final_fit_ols_top_rq2 <- last_fit(
+  ols_wf_rq2_top, 
+  split = data_split_rq2) # same as above 
+
+#### Elastic net - tokens and topics parameters 
+best_params_tok_rq2 <- select_best(
+  enet_res_tok_rq2, 
+  metric = "rmse") # same as above
+
+best_params_top_rq2 <- select_best(
+  enet_res_top_rq2, 
+  metric = "rmse") # same as above 
+
+#### Elastic Net - finalizing workflows 
+final_enet_wf_tok_rq2 <- finalize_workflow(
+  enet_wf_rq2_tok, 
+  best_params_tok_rq2) # same as above
+
+final_enet_wf_top_rq2 <- finalize_workflow(
+  enet_wf_rq2_top, 
+  best_params_top_rq2) # same as above
+
+#### Elastic Net - doing final fit
+final_fit_enet_tok_rq2 <- last_fit(
+  final_enet_wf_tok_rq2, 
+  split = data_split_rq2) # same as above
+
+final_fit_enet_top_rq2 <- last_fit(
+  final_enet_wf_top_rq2, 
+  split = data_split_rq2) # same as above
 
 
+### Collecting metrics 
+test_metrics_ols_tok_rq2  <- collect_metrics(final_fit_ols_tok_rq2) # same as above
+test_metrics_ols_top_rq2  <- collect_metrics(final_fit_ols_top_rq2) # same as above
+test_metrics_enet_tok_rq2 <- collect_metrics(final_fit_enet_tok_rq2) # same as above
+test_metrics_enet_top_rq2 <- collect_metrics(final_fit_enet_top_rq2) # same as above
 
+## Final results table for RQ2
+
+final_comparison_table_rq2 <- tibble(
+  Model = c("OLS", "OLS", "Elastic Net", "Elastic Net"),
+  Feature_Set = c("Tokens Only", "Topics Only", "Tokens Only", "Topics Only"), # same as above 
+  
+  # Validation Metrics
+  Train_RMSE = c(ols_tok_rmse_rq2, ols_top_rmse_rq2, enet_tok_rmse_rq2, enet_top_rmse_rq2), # same as above 
+  Train_RSQ  = c(ols_tok_rsq_rq2, ols_top_rsq_rq2, enet_tok_rsq_rq2, enet_top_rsq_rq2), # same as above 
+  
+  # Test Metrics
+  Test_RMSE = c(
+    test_metrics_ols_tok_rq2 |> filter(.metric == "rmse") |> pull(.estimate), 
+    test_metrics_ols_top_rq2 |> filter(.metric == "rmse") |> pull(.estimate), 
+    test_metrics_enet_tok_rq2 |> filter(.metric == "rmse") |> pull(.estimate), 
+    test_metrics_enet_top_rq2 |> filter(.metric == "rmse") |> pull(.estimate)
+  ),
+  Test_RSQ = c(
+    test_metrics_ols_tok_rq2 |> filter(.metric == "rsq") |> pull(.estimate), 
+    test_metrics_ols_top_rq2 |> filter(.metric == "rsq") |> pull(.estimate), 
+    test_metrics_enet_tok_rq2 |> filter(.metric == "rsq") |> pull(.estimate), 
+    test_metrics_enet_top_rq2 |> filter(.metric == "rsq") |> pull(.estimate)
+  )
+) |> 
+  arrange(Test_RMSE) # same as above
+
+print(final_comparison_table_rq2) # same as above 
+
+final_comparison_table_rq2 |>
+  write_csv("out/rq2_results.csv") # same as above
+
+#### Outputs indicate that topics are terrible compared to pure tokens 
+
+
+## Machine learning code for RQ3:
 
