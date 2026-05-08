@@ -9,8 +9,13 @@ library(stm) # Topic modeling
 
 # Data Import and Cleaning 
 
+## Seed 
+set.seed(42)
+
+## Import
 df_import <- read_csv("data/glassdoor_reviews.csv") # Initial import read_csv as it creates a tibble for tidyverse, and is better to work with 
 
+## pre-processing
 df_clean <- df_import |>
   select(
     headline,
@@ -29,8 +34,6 @@ df_clean <- df_import |>
     overall_rating,
     review_text
   ) |>
- 
-  ) |>  
   mutate(review_id = row_number()) # Create IDs to track reviews across dataframes and cleaning steps. 
 
 
@@ -64,11 +67,16 @@ DTM <- DocumentTermMatrix(
 ## Removing sparse terms 
 slimmed_dtm <- removeSparseTerms(DTM, .95) # set the threshold to .95 meaning term is allowed to be empty in 95% of text 
 
+## Dimension fitting 
+df_clean <- df_clean[1:nrow(slimmed_dtm), ] # The DTM row count is the ground truth — subset df_clean to match for dimension purposes
+
 ## Converting back to dataframe 
 tokens_df <- slimmed_dtm|> 
   as.matrix() |> # Turns this into a matrix 
   as.tibble() |> # Makes it a tibble for ML tasks, chosen as opposed to base R df due to tidy models
-  rename_with(make.names) # Naming cols so that tidy models work 
+  rename_with(make.names) |> # Naming cols so that tidy models work 
+  mutate(review_id = df_clean$review_id) |>
+  filter(review_id %in% topics_df$review_id) # Filtered for conformability with topics
 
 
 
@@ -182,9 +190,10 @@ topic_table |>
   write_csv("out/topics.csv")
 
 ## Theta matrix for ML 
-topics_df <- as_tibble(topic_model$theta) |>
-  rename_with(~paste0("topic_", 1:6)) # The theta matrix essentially tells us what proportion of each topic a given string of review text falls into. 
-
+topics_df <- as_tibble(topic_model$theta) |> # The theta matrix essentially tells us what proportion of each topic a given string of review text falls into. 
+  rename_with(~paste0("topic_", 1:6)) |>
+  mutate(review_id = df_clean$review_id[1:nrow(topic_model$theta)]) |> # subseting df_clean IDs to match theta dimensions
+  filter(review_id %in% tokens_df$review_id) 
 
 
 ## Getting embeddings from local LLM model (nomic-embed-text)
@@ -208,37 +217,58 @@ raw_embeddings <- embed_text(
 ### Formatting for ML 
 f_emb <- raw_embeddings |>
   as.matrix() |>
-  as.tibble() # Formatted for tidy model steps 
+  as.tibble() |> # Formatted for tidy model steps 
+  mutate(review_id = df_clean$review_id) |>  
+  filter(review_id %in% topics_df$review_id) # filtered for conformability
 
 ### Final prep step for data analysis - Creating dataframes based on previous analysis 
 
+overall_rating <- df_clean |>
+  select(
+    overall_rating,
+    review_id
+  ) |>
+  filter(review_id %in% topics_df$review_id) # outcome variable made to conform as well 
 
 #### Joins 
 
 
-#### RQ1: Embeddings vs. pure tokens
-overall_rating <- df_clean$overall_rating # Outcome variable 
-
-rq1_df <- bind_cols(
-  overall_rating,
-  tokens_df,
-  f_emb
-)
-
+##### RQ1: Embeddings vs. pure tokens
+rq1_df <- df_clean |>
+  select(review_id, overall_rating) |>
+  inner_join(tokens_df, by = "review_id") |>
+  inner_join(f_emb, by = "review_id")
 
 #### RQ2: Topics vs. Pure tokens 
-rq2_df <- bind_cols(
-  overall_rating = df_clean$overall_rating,
-  tokens_df,
-  topics_df
-)
+rq2_df <- df_clean |>
+  select(
+    review_id, 
+    overall_rating
+  ) |>
+  inner_join(
+    tokens_df, 
+    by = "review_id"
+  ) |>
+  inner_join(
+    topics_df, 
+    by = "review_id"
+  )
 
 
 #### RQ3: Embeddings vs. Topics vs. Both combined 
-rq3_df <- bind_cols(
-  overall_rating = df_clean$overall_rating,
-  f_emb,
-  topics_df
-)
+rq3_df <- df_clean |>
+  select(
+    review_id, 
+    overall_rating
+  ) |>
+  inner_join(
+    f_emb, 
+    by = "review_id"
+  ) |>
+  inner_join(
+    topics_df, 
+    by = "review_id"
+  )
 
-
+##### NOTE: I joined up the tables using an inner join to ensure that 
+##### everything was matched up and preped for the ML task. 
