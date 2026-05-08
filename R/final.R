@@ -243,6 +243,8 @@ rq1_df <- df_clean |>
   inner_join(tokens_df, by = "review_id") |>
   inner_join(f_emb, by = "review_id")
 
+write_rds(rq1_df, "data/rq1_prepped.rds") # save rds for data file incase of crash 
+
 #### RQ2: Topics vs. Pure tokens 
 rq2_df <- df_clean |>
   select(
@@ -277,7 +279,7 @@ rq3_df <- df_clean |>
 ##### NOTE: I joined up the tables using an inner join to ensure that 
 ##### everything was matched up and preped for the ML task. 
 
-## Machine learning code:
+## Machine learning code RQ1:
 
 ### Data split and CV folds 
 
@@ -311,6 +313,14 @@ base_rec_rq1 <- recipe(
       all_numeric_predictors()
   ) # scales all predictors (required for elastic net)
 
+### Tokens only recipe 
+tokens_rec_rq1 <- base_rec_rq1 |>
+  step_rm(starts_with("dim_")) # Removes 
+
+### embeddings only recipe
+embeds_rec_rq1 <- base_rec_rq1 |>
+  step_rm(all_predictors(), -starts_with("dim_"))
+
 ### Model specs 
 
 #### OLS 
@@ -323,31 +333,37 @@ enet_spec_rq1 <- linear_reg(penalty = tune(), mixture = tune()) |>
 
 #### Workflows - bundles together the model specs and the pre-processed data together - similar to train()
 
-##### OLS
-ols_wf_rq1 <- workflow() |>
-  add_recipe(base_rec_rq1) |>
-  add_model(ols_spec_rq1) # Specifies the recipe and model from above 
+##### OLS tokens and emberddings 
+ols_wf_rq1_tok <- workflow() |>
+  add_recipe(tokens_rec_rq1) |> # Uses the recipe from above 
+  add_model(ols_spec_rq1) # Chooses the model specifications 
 
-##### Elastic Net 
-enet_wf_rq1 <- workflow() |>
-  add_recipe(base_rec_rq1) |>
+ols_wf_rq1_emb <- workflow() |>
+  add_recipe(embeds_rec_rq1) |> # same as above 
+  add_model(ols_spec_rq1) # same as above 
+
+##### Elastic Net tokens and embeddings 
+enet_wf_rq1_tok <- workflow() |>
+  add_recipe(embeds_rec_rq1) |>
   add_model(enet_spec_rq1) # same as above comment 
+
+enet_wf_rq1_emb <- workflow() |>
+  add_recipe(enet_rec_rq1) |>
+  add_model(enet_spec_rq1)
+
 
 ### Model Execution 
 
 #### OLS 
-ols_results_rq1 <- fit_resamples(
-  ols_wf_rq1,
+ols_res_tok_rq1 <- fit_resamples(
+  ols_wf_rq1_tok, 
   resamples = cv_folds_rq1
-)
+) # fits model on just the tokens 
 
-##### Elastic Net 
-###### Grid creation:
-enet_grid <- grid_regular(penalty(), mixture(), levels = 9) # tests 3 penalties and three mixtures (9 combinations)
-
-
-
-
+# ols_res_embed_rq1 <- fit_resamples(
+#   ols_wf_rq1_emb, 
+#   resamples = cv_folds_rq1
+# ) # fits model on just embeddings 
 
 
 
