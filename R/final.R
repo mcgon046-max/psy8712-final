@@ -492,7 +492,7 @@ final_comparison_table_rq1 <- tibble(
   Test_RMSE = c(
     test_metrics_ols_tok_rq1 |> 
       filter(.metric == "rmse"
-    ) |> 
+    ) |> # pulls the RMSE metric 
     pull(.estimate), test_metrics_ols_emb_rq1 |> 
     filter(.metric == "rmse"
     ) |> 
@@ -504,19 +504,94 @@ final_comparison_table_rq1 <- tibble(
     pull(.estimate)),
   Test_RSQ = c(
     test_metrics_ols_tok_rq1 |> 
-    filter(.metric == "rsq") |> 
+    filter(.metric == "rsq"
+    ) |> # pulls the R^2 metric 
     pull(.estimate), test_metrics_ols_emb_rq1 |> 
-    filter(.metric == "rsq") |> 
+    filter(.metric == "rsq"
+    ) |> 
     pull(.estimate), test_metrics_enet_tok_rq1 |> 
-    filter(.metric == "rsq") |> 
-    pull(.estimate), test_metrics_enet_emb_rq1 |> filter(.metric == "rsq") |> pull(.estimate)
+    filter(.metric == "rsq"
+    ) |> 
+    pull(.estimate), test_metrics_enet_emb_rq1 |> 
+    filter(.metric == "rsq") |> pull(.estimate)
   )
 ) |> 
-  arrange(Test_RMSE) # Sort by best Holdout performance
+  arrange(Test_RMSE) # Sort by best holdout performance
 
-print(final_comparison_table_rq1)
+print(final_comparison_table_rq1) # One can see that the RMSE goes up on the test set and R^2 goes down, indicating a lack of leakage. 
 
 final_comparison_table_rq1 |>
   write_csv("out/rq1_results.csv")
 
+#### Embeddings have better performance and Elastic Net is best here (so far - need to add ranger on)
 
+## Machine learning code for RQ2:
+
+### train vs. test split: 
+data_split_rq2 <- initial_split(
+  rq2_df,
+  prop = .8,
+  strata = overall_rating
+) # same as above 
+
+train_data_rq2 <- training(data_split_rq2) # same as above 
+test_data_rq2 <- testing(data_split_rq2) # same as above 
+
+##### Cross-validation folds for hyperparameter tuning 
+cv_folds_rq2 <- vfold_cv(
+  train_data_rq2, 
+  v = 10, 
+  strata = overall_rating
+) # same as above
+
+### Recepies 
+base_rec_rq2 <- recipe(
+  overall_rating ~ ., 
+  data = train_data_rq2
+) |>
+  update_role(
+    review_id, 
+    new_role = "ID"
+  ) |> 
+  step_normalize(
+    all_numeric_predictors()
+  ) # same as above
+
+#### Tokens only recipe 
+tokens_rec_rq2 <- base_rec_rq2 |>
+  step_rm(starts_with("topic_")) # same as above except that it's topics instead of embeddings 
+
+#### Topics only recipe
+topics_rec_rq2 <- base_rec_rq2 |>
+  step_rm(all_predictors(), -starts_with("topic_")) # same as above
+
+
+### Model Specs 
+
+#### OLS 
+ols_spec_rq2 <- linear_reg() |>
+  set_engine("lm") # same as above 
+
+#### Elastic net 
+enet_spec_rq2 <- linear_reg(penalty = tune(), mixture = tune()) |> 
+  set_engine("glmnet") # same as above
+
+### Workflows 
+
+##### OLS tokens and topics 
+ols_wf_rq2_tok <- workflow() |>
+  add_recipe(tokens_rec_rq2) |> 
+  add_model(ols_spec_rq2) # same as above 
+
+ols_wf_rq2_top <- workflow() |>
+  add_recipe(topics_rec_rq2) |> 
+  add_model(ols_spec_rq2) # same as above 
+
+##### Elastic Net tokens and topics 
+enet_wf_rq2_tok <- workflow() |>
+  add_recipe(tokens_rec_rq2) |>
+  add_model(enet_spec_rq2) # same as above
+
+enet_wf_rq2_top <- workflow() |>
+  add_recipe(topics_rec_rq2) |>
+  add_model(enet_spec_rq2) # same as above
