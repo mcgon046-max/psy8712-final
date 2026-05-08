@@ -595,3 +595,38 @@ enet_wf_rq2_tok <- workflow() |>
 enet_wf_rq2_top <- workflow() |>
   add_recipe(topics_rec_rq2) |>
   add_model(enet_spec_rq2) # same as above
+
+
+### Model execution:
+
+#### OLS 
+ols_res_tok_rq2 <- fit_resamples(
+  ols_wf_rq2_tok, 
+  resamples = cv_folds_rq2
+) # same as above 
+
+ols_res_top_rq2 <- fit_resamples(
+  ols_wf_rq2_top,
+  resamples = cv_folds_rq2
+) # same as above
+
+#### Elastic Net 
+# grid
+enet_grid_rq2 <- grid_regular(penalty(), mixture(), levels = 3) # same as above
+
+enet_res_tok_rq2 <- tune_grid(
+  enet_wf_rq2_tok,
+  resamples = cv_folds_rq2,
+  grid = enet_grid_rq2
+) # same as above
+
+enet_res_top_rq2 <- tune_grid(
+  enet_wf_rq2_top,
+  resamples = cv_folds_rq2,
+  grid = enet_grid_rq2
+) # same as above
+
+
+
+
+
