@@ -323,11 +323,11 @@ base_rec_rq1 <- recipe(
 
 ### Tokens only recipe 
 tokens_rec_rq1 <- base_rec_rq1 |>
-  step_rm(starts_with("dim_")) # Removes 
+  step_rm(starts_with("dim_")) # Removes embeddings 
 
 ### embeddings only recipe
 embeds_rec_rq1 <- base_rec_rq1 |>
-  step_rm(all_predictors(), -starts_with("dim_"))
+  step_rm(all_predictors(), -starts_with("dim_")) # keeps the embeddings 
 
 ### Model specs 
 
@@ -352,12 +352,12 @@ ols_wf_rq1_emb <- workflow() |>
 
 ##### Elastic Net tokens and embeddings 
 enet_wf_rq1_tok <- workflow() |>
-  add_recipe(embeds_rec_rq1) |>
-  add_model(enet_spec_rq1) # same as above comment 
+  add_recipe(tokens_rec_rq1) |>
+  add_model(enet_spec_rq1) # same as above comment (tokens)
 
 enet_wf_rq1_emb <- workflow() |>
-  add_recipe(enet_rec_rq1) |>
-  add_model(enet_spec_rq1)
+  add_recipe(embeds_rec_rq1) |>
+  add_model(enet_spec_rq1) # Embeddings 
 
 
 ### Model Execution 
@@ -368,10 +368,27 @@ ols_res_tok_rq1 <- fit_resamples(
   resamples = cv_folds_rq1
 ) # fits model on just the tokens 
 
-# ols_res_embed_rq1 <- fit_resamples(
-#   ols_wf_rq1_emb, 
-#   resamples = cv_folds_rq1
-# ) # fits model on just embeddings 
+ols_res_embed_rq1 <- fit_resamples(
+  ols_wf_rq1_emb,
+  resamples = cv_folds_rq1
+) # fits model on just embeddings
+
+
+#### Elastic net 
+# grid 
+enet_grid_rq1 <- grid_regular(penalty(), mixture(), levels = 3) # 9 total combinations of penalties and mixtures (too many crashes R)
+
+enet_res_tok_rq1 <- tune_grid(
+  enet_wf_rq1_tok,
+  resamples = cv_folds_rq1,
+  grid = enet_grid_rq1
+) # fits on only tokens
+
+enet_res_emb_rq1 <- tune_grid(
+  enet_wf_rq1_emb,
+  resamples = cv_folds_rq1,
+  grid = enet_grid_rq1
+) # fits only embeddings 
 
 
 
