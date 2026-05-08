@@ -445,26 +445,78 @@ final_fit_ols_emb_rq1 <- last_fit(
   split = data_split_rq1) # same as above but on embeddings
 
 #### Elstic net - tokens and embeddings parameters 
-best_params_tok_rq1 <- select_best(enet_res_tok_rq1, metric = "rmse") # finds best parameters from tuning grid 
-best_params_emb_rq1 <- select_best(enet_res_emb_rq1, metric = "rmse") # same but for embeddings 
+best_params_tok_rq1 <- select_best(
+  enet_res_tok_rq1, 
+  metric = "rmse") # finds best parameters from tuning grid
+
+best_params_emb_rq1 <- select_best(
+  enet_res_emb_rq1, 
+  metric = "rmse") # same but for embeddings 
+
+#### Elastic Net - finalizing workflows - looks for best workflow that works based on these hyperparameters 
+final_enet_wf_tok_rq1 <- finalize_workflow(
+  enet_wf_rq1_tok, 
+  best_params_tok_rq1)
+
+final_enet_wf_emb_rq1 <- finalize_workflow(
+  enet_wf_rq1_emb, 
+  best_params_emb_rq1)
+
+#### Elastic Net - doing final fit like from above 
+final_fit_enet_tok_rq1 <- last_fit(
+  final_enet_wf_tok_rq1, 
+  split = data_split_rq1)
+
+final_fit_enet_emb_rq1 <- last_fit(
+  final_enet_wf_emb_rq1, 
+  split = data_split_rq1)
+
+
+### Collecting metrics 
+test_metrics_ols_tok_rq1  <- collect_metrics(final_fit_ols_tok_rq1)
+test_metrics_ols_emb_rq1  <- collect_metrics(final_fit_ols_emb_rq1)
+test_metrics_enet_tok_rq1 <- collect_metrics(final_fit_enet_tok_rq1)
+test_metrics_enet_emb_rq1 <- collect_metrics(final_fit_enet_emb_rq1)
 
 ## final results table for RQ1:
 
-### Train vs. test metrics 
-
-
-results_table_rq1 <- tibble(
+final_comparison_table_rq1 <- tibble(
   Model = c("OLS", "OLS", "Elastic Net", "Elastic Net"),
-  Feature_Set = c("Tokens Only", "Embeddings Only", "Tokens Only", "Embeddings Only"),
-  RMSE = c(ols_tok_rmse_rq1, ols_emb_rmse_rq1, enet_tok_rmse_rq1, enet_emb_rmse_rq1),
-  R_Squared = c(ols_tok_rsq_rq1, ols_emb_rsq_rq1, enet_tok_rsq_rq1, enet_emb_rsq_rq1)
+  Feature_Set = c("Tokens Only", "Embeddings Only", "Tokens Only", "Embeddings Only"), # Labels the models and feature set 
+  
+  # Validation Metrics (from your CV)
+  Train_RMSE = c(ols_tok_rmse_rq1, ols_emb_rmse_rq1, enet_tok_rmse_rq1, enet_emb_rmse_rq1), # RMSE from above analysis 
+  Train_RSQ  = c(ols_tok_rsq_rq1, ols_emb_rsq_rq1, enet_tok_rsq_rq1, enet_emb_rsq_rq1), # R^2 from above analysis (Both are from train set)
+  
+  # Test Metrics (The "Holdout" results)
+  Test_RMSE = c(
+    test_metrics_ols_tok_rq1 |> 
+      filter(.metric == "rmse"
+    ) |> 
+    pull(.estimate), test_metrics_ols_emb_rq1 |> 
+    filter(.metric == "rmse"
+    ) |> 
+    pull(.estimate), test_metrics_enet_tok_rq1 
+    |> filter(.metric == "rmse"
+    ) |> 
+    pull(.estimate), test_metrics_enet_emb_rq1 |> 
+    filter(.metric == "rmse") |> 
+    pull(.estimate)),
+  Test_RSQ = c(
+    test_metrics_ols_tok_rq1 |> 
+    filter(.metric == "rsq") |> 
+    pull(.estimate), test_metrics_ols_emb_rq1 |> 
+    filter(.metric == "rsq") |> 
+    pull(.estimate), test_metrics_enet_tok_rq1 |> 
+    filter(.metric == "rsq") |> 
+    pull(.estimate), test_metrics_enet_emb_rq1 |> filter(.metric == "rsq") |> pull(.estimate)
+  )
 ) |> 
-  arrange(RMSE) # Sorts from lowest error to highest error - Creation of csv output 
+  arrange(Test_RMSE) # Sort by best Holdout performance
 
-# Print the final output
-print(results_table_rq1)
+print(final_comparison_table_rq1)
 
-# saving the csv 
-results_table_rq1 |>
+final_comparison_table_rq1 |>
   write_csv("out/rq1_results.csv")
+
 
