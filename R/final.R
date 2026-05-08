@@ -432,7 +432,26 @@ enet_emb_rsq_rq1  <- show_best(
   ) |> 
   pull(mean)
 
+### train vs. test (looking at out of sample prediction)
+
+#### OLS - tokens
+final_fit_ols_tok_rq1 <- last_fit(
+  ols_wf_rq1_tok, 
+  split = data_split_rq1) # last_fit takes best parameters, trains the model (leaving above steps to show debugging process), and evaluates it on the test set 
+
+#### OLS - embeddings
+final_fit_ols_emb_rq1 <- last_fit(
+  ols_wf_rq1_emb, 
+  split = data_split_rq1) # same as above but on embeddings
+
+#### Elstic net - tokens and embeddings parameters 
+best_params_tok_rq1 <- select_best(enet_res_tok_rq1, metric = "rmse") # finds best parameters from tuning grid 
+best_params_emb_rq1 <- select_best(enet_res_emb_rq1, metric = "rmse") # same but for embeddings 
+
 ## final results table for RQ1:
+
+### Train vs. test metrics 
+
 
 results_table_rq1 <- tibble(
   Model = c("OLS", "OLS", "Elastic Net", "Elastic Net"),
@@ -440,7 +459,7 @@ results_table_rq1 <- tibble(
   RMSE = c(ols_tok_rmse_rq1, ols_emb_rmse_rq1, enet_tok_rmse_rq1, enet_emb_rmse_rq1),
   R_Squared = c(ols_tok_rsq_rq1, ols_emb_rsq_rq1, enet_tok_rsq_rq1, enet_emb_rsq_rq1)
 ) |> 
-  arrange(RMSE) # Sorts from lowest error to highest error
+  arrange(RMSE) # Sorts from lowest error to highest error - Creation of csv output 
 
 # Print the final output
 print(results_table_rq1)
