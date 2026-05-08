@@ -75,8 +75,7 @@ tokens_df <- slimmed_dtm|>
   as.matrix() |> # Turns this into a matrix 
   as.tibble() |> # Makes it a tibble for ML tasks, chosen as opposed to base R df due to tidy models
   rename_with(make.names) |> # Naming cols so that tidy models work 
-  mutate(review_id = df_clean$review_id) |>
-  filter(review_id %in% topics_df$review_id) # Filtered for conformability with topics
+  mutate(review_id = df_clean$review_id)
 
 
 
@@ -94,14 +93,16 @@ dfm2stm <- readCorpus(slimmed_dtm, type = "slam") # Read corpus to reformat the 
 
 
 
-## saving kresult plot to viz 
-png("figs/kfig.png", width = 16, height = 9, units = "in", res = 300)
+# ## saving kresult plot to viz 
+# png("figs/kfig.png", width = 16, height = 9, units = "in", res = 300)
+# 
+# #plot
+# plot(kresult)
+# 
+# # Turn the device off to finalize the file save
+# dev.off()
 
-#plot
-plot(kresult)
-
-# Turn the device off to finalize the file save
-dev.off()
+###### Also commented out for run from source 
 
 ### Note: I had to use base R not ggsave here to get the png in order for it 
 ### save correctly 
@@ -230,6 +231,9 @@ overall_rating <- df_clean |>
   ) |>
   filter(review_id %in% topics_df$review_id) # outcome variable made to conform as well 
 
+tokens_df <- tokens_df |>
+  filter(review_id %in% topics_df$review_id) # Filtered for conformability with topics - needed to put here so code can run from source 
+
 #### Joins 
 
 
@@ -272,3 +276,78 @@ rq3_df <- df_clean |>
 
 ##### NOTE: I joined up the tables using an inner join to ensure that 
 ##### everything was matched up and preped for the ML task. 
+
+## Machine learning code:
+
+### Data split and CV folds 
+
+#### Training/test split for RQ1 
+data_split_rq1 <- initial_split(
+  rq1_df,
+  prop = .8,
+  strata = overall_rating
+) # initial split is like createdatapartition() wherein it splits the sample into 80/20 split based on the overall_rating variable 
+
+train_data <- training(data_split_rq1) # training() shows the actual training set 
+test_data <- testing(data_split_rq1) # testing() shows the actual testing dataset 
+
+##### Cross-validation folds for hyperparameter tuning 
+cv_folds_rq1 <- vfold_cv(
+  train_data, 
+  v = 10, 
+  strata = overall_rating
+) # Similar to the trainControl() call in caret, in tidymodels this is treated as a standalone object natively 
+
+### Tidymodels Recipes - the "blueprints" for data pre-processing (like caret preProcess)
+base_rec_rq1 <- recipe(
+    overall_rating ~ ., # prediction forumla 
+    data = train_data
+  ) |>
+    update_role(
+      review_id, 
+      new_role = "ID"
+  ) |> # makes it so the review ID is not seen as a predictor variable 
+    step_normalize(
+      all_numeric_predictors()
+  ) # scales all predictors (required for elastic net)
+
+### Model specs 
+
+#### OLS 
+ols_spec_rq1 <- linear_reg() |>
+  set_engine("lm") # makes this linear regression and the model to OLS 
+
+#### Elsatic net 
+enet_spec_rq1 <- linear_reg(penalty = tune(), mixture = tune()) |> 
+  set_engine("glmnet") # penalty is how much to shrink the coefficient, mixture is to find optimal alpha value leaving tune() empty means I'm not making any a priori assumptions about what this ought to be 
+
+#### Workflows - bundles together the model specs and the pre-processed data together - similar to train()
+
+##### OLS
+ols_wf_rq1 <- workflow() |>
+  add_recipe(base_rec_rq1) |>
+  add_model(ols_spec_rq1) # Specifies the recipe and model from above 
+
+##### Elastic Net 
+enet_wf_rq1 <- workflow() |>
+  add_recipe(base_rec_rq1) |>
+  add_model(enet_spec_rq1) # same as above comment 
+
+### Model Execution 
+
+#### OLS 
+ols_results_rq1 <- fit_resamples(
+  ols_wf_rq1,
+  resamples = cv_folds_rq1
+)
+
+##### Elastic Net 
+###### Grid creation:
+enet_grid <- grid_regular(penalty(), mixture(), levels = 9) # tests 3 penalties and three mixtures (9 combinations)
+
+
+
+
+
+
+
