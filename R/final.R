@@ -260,6 +260,7 @@ rq2_df <- df_clean |>
     by = "review_id"
   )
 
+write_rds(rq2_df, "data/rq2_prepped.rds") # save rds for data file incase of crash 
 
 #### RQ3: Embeddings vs. Topics vs. Both combined 
 rq3_df <- df_clean |>
@@ -275,6 +276,8 @@ rq3_df <- df_clean |>
     topics_df, 
     by = "review_id"
   )
+
+write_rds(rq3_df, "data/rq3_prepped.rds") # save rds for data file incase of crash 
 
 ##### NOTE: I joined up the tables using an inner join to ensure that 
 ##### everything was matched up and preped for the ML task. 
