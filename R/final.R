@@ -21,12 +21,18 @@ df_clean <- df_import |>
   slice_sample(n = 10000) |> # Randomly samples rows for machine learning tasks, compute on entire data set was very high
   drop_na() |> # dropping NAs 
   mutate(
-    review_text = paste(headline, pros, cons, sep = " ")
+    review_text = paste(headline, pros, cons, sep = " "), # Smushes all the text together into one vecotr 
+      review_text = str_squish(review_text), # Lightweight whitespace removal for later steps
+      review_text = str_trunc(review_text, 8000), # Ensures text isn't too long for vector embeddings 
   ) |> # Mutate to put all the review text into a single string for NLP 
   select(
     overall_rating,
     review_text
-  ) 
+  ) |>
+ 
+  ) |>  
+  mutate(review_id = row_number()) # Create IDs to track reviews across dataframes and cleaning steps. 
+
 
 # Analysis 
 
@@ -176,10 +182,19 @@ topic_table |>
   write_csv("out/topics.csv")
 
 ## Theta matrix for ML 
-theta_topics <- as_tibble(topic_model$theta) |>
-  rename_with(~paste0("topic_", 1:6)) # Essentially tells us what preportion of each topic a given string of review text falls into. 
+topics_df <- as_tibble(topic_model$theta) |>
+  rename_with(~paste0("topic_", 1:6)) # The theta matrix essentially tells us what proportion of each topic a given string of review text falls into. 
+
+
 
 ## Getting embeddings from local LLM model (nomic-embed-text)
+
+### Preping review text for embeddings 
+df_clean <- df_clean |>
+  mutate(review_text = str_squish(review_text)) |> # Removes extra whitespace/newlines
+  filter(review_text != "") |>                    # Ensure no empty strings
+  mutate(review_text = str_trunc(review_text, 8000)) # Makes sure the reviews are not too long 
+
 
 ### Pulling the model 
 pull_model("nomic-embed-text") # pull_model actually calls the Ollama api to get it loaded into my R enviornment 
@@ -195,16 +210,35 @@ f_emb <- raw_embeddings |>
   as.matrix() |>
   as.tibble() # Formatted for tidy model steps 
 
-### Final prep step for data analysis
+### Final prep step for data analysis - Creating dataframes based on previous analysis 
 
-#### RQ1: 
+
+#### Joins 
+
+
+#### RQ1: Embeddings vs. pure tokens
+overall_rating <- df_clean$overall_rating # Outcome variable 
+
 rq1_df <- bind_cols(
-  overall_rating = df_clean$overall_rating,
+  overall_rating,
   tokens_df,
   f_emb
 )
 
 
+#### RQ2: Topics vs. Pure tokens 
+rq2_df <- bind_cols(
+  overall_rating = df_clean$overall_rating,
+  tokens_df,
+  topics_df
+)
 
+
+#### RQ3: Embeddings vs. Topics vs. Both combined 
+rq3_df <- bind_cols(
+  overall_rating = df_clean$overall_rating,
+  f_emb,
+  topics_df
+)
 
 
