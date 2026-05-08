@@ -59,15 +59,12 @@ DTM <- DocumentTermMatrix(
 slimmed_dtm <- removeSparseTerms(DTM, .95) # set the threshold to .95 meaning term is allowed to be empty in 95% of text 
 
 ## Converting back to dataframe 
-tokens_df <- as.matrix(slimmed_dtm) |> # Turns this into a matrix 
+tokens_df <- slimmed_dtm|> 
+  as.matrix() |> # Turns this into a matrix 
   as.tibble() |> # Makes it a tibble for ML tasks, chosen as opposed to base R df due to tidy models
   rename_with(make.names) # Naming cols so that tidy models work 
 
-## Final ML token df 
-ml_data_tokens <- bind_cols(
-  overall_rating = df_clean$overall_rating, 
-  tokens_df
-)
+
 
 ## topic analysis 
 dfm2stm <- readCorpus(slimmed_dtm, type = "slam") # Read corpus to reformat the dtm for the k search
@@ -92,9 +89,14 @@ plot(kresult)
 # Turn the device off to finalize the file save
 dev.off()
 
-### Note: I had to use base R not ggsave here to get the png in order for it save correctly 
+### Note: I had to use base R not ggsave here to get the png in order for it 
+### save correctly 
 
-### It Appears that 6 topics are the best option here. This is because it retains semantic coherence, has the highest held out likelihood, has low residuals, and isn't overfit
+## Topic explanation 
+
+### It Appears that 6 topics are the best option here. This is because it 
+### retains semantic coherence, has the highest held out likelihood, has low 
+### residuals, and doesn't appear to be overfit
 
 ## Topic model with k = 6
 topic_model <- stm(
@@ -144,14 +146,18 @@ labelTopics(topic_model)
 # Lift: long, will, customer, get, like, year, manager 
 # Score: long, job, get, staff, manager, will, much 
 
-### These topics are quite clean, Based on the highest prob and frex I am outputting a tibble with my proposed names
+
 ### These names are based on the Highest prob and FREX
-### T1: heavily focused on financial aspects and managment
+### T1: heavily focused on financial aspects and managment - good and bad loaded here likely because pay perceptiopns can be both. 
 ### T2: Development and learning opportunities came out as best here
-### T3: These words seemed to center around the actual work enviornment - the actual "vibes" of the office 
+### T3: These words seemed to center around the actual work enviornment - the actual "vibes" of the office as well as hourly work flexibility 
 ### T4: Words centered around the overall company culture 
 ### T5: Words here are very clearly related to worklife balance 
-### T6: This topic appears to be all about grinding and stress due to managers 
+### T6: This topic appears to be all about unnecssay grinding and stress due to managers - *Likely a burnout indicator*
+
+
+### These topics are quite clean, Based on the highest prob and frex I am 
+### outputting a tibble with my proposed names
 
 topic_table <- tibble(
   Topic = paste0("Topic ", 1:6),
@@ -165,10 +171,13 @@ topic_table <- tibble(
   )
 )
 
-
 ## CSV output for git scraping 
 topic_table |> 
   write_csv("out/topics.csv")
+
+## Theta matrix for ML 
+theta_topics <- as_tibble(topic_model$theta) |>
+  rename_with(~paste0("topic_", 1:6)) # Essentially tells us what preportion of each topic a given string of review text falls into. 
 
 ## Getting embeddings from local LLM model (nomic-embed-text)
 
@@ -179,7 +188,22 @@ pull_model("nomic-embed-text") # pull_model actually calls the Ollama api to get
 raw_embeddings <- embed_text(
   text = df_clean$review_text,
   model = "nomic-embed-text"
-) # Embed text actually generates the vector embeddings from the text using the LLM model 
+) # Embed text generates the vector embeddings from the text using the LLM model 
+
+### Formatting for ML 
+f_emb <- raw_embeddings |>
+  as.matrix() |>
+  as.tibble() # Formatted for tidy model steps 
+
+### Final prep step for data analysis
+
+#### RQ1: 
+rq1_df <- bind_cols(
+  overall_rating = df_clean$overall_rating,
+  tokens_df,
+  f_emb
+)
+
 
 
 
