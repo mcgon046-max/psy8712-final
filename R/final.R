@@ -479,7 +479,7 @@ final_enet_wf_emb_rq1 <- finalize_workflow(
 #### Elastic Net - doing final fit like from above 
 final_fit_enet_tok_rq1 <- last_fit(
   final_enet_wf_tok_rq1, 
-  split = data_split_rq1)
+  split = data_split_rq1) # Fits on training data and evaluates on test data in one step vs. manual caret::predict()
 
 final_fit_enet_emb_rq1 <- last_fit(
   final_enet_wf_emb_rq1, 
@@ -1235,3 +1235,34 @@ final_rf_table |>
 
 # Final rds save
 save.image(file = "out/workspace.RData")
+
+
+#### FINAL RESEARCH QUESTION ANALYSIS 
+
+# RQ1: Does the use of embeddings (using the nomic-embed-text LLM embeddings 
+# model) improve prediction of satisfaction beyond a rigorous tokenization 
+# strategy?
+
+## Answer: Embeddings clearly win. Across every model type, switching from
+## tokens to embeddings drops RMSE by roughly .10 and increases R^2 by around
+## .22-.38. The vector embeddings are shown to have meaningfully improved 
+## explanatory power as compared to pure tokens. 
+
+
+# RQ2: Does the use of topics improve prediction of satisfaction beyond a 
+# rigorous tokenization strategy?
+
+## Answer: Topics are suprisingly awful at prediction, they have an R^2 that is 
+## essentially 0. It suggests that although these topics may capture themes, 
+## they fail to meaningfully predict overall satisfaction. Take the example of 
+## the compensation topic, although this is meaningful topic, compensation can
+## be both good or bad, which can cancel out and provide next to no explanatory 
+## power 
+
+
+# RQ3: Does the use of embeddings plus topics improve prediction of satisfaction 
+# beyond either alone? 
+
+## Answer: Combining topics and embeddings does not meaningfully improve 
+## prediction over embeddings alone. 
+
