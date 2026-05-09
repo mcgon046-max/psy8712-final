@@ -1264,5 +1264,33 @@ save.image(file = "out/workspace.RData")
 # beyond either alone? 
 
 ## Answer: Combining topics and embeddings does not meaningfully improve 
-## prediction over embeddings alone. 
+## prediction over embeddings alone or topics alone (which I've explained are
+## awful). the combined model is essentially identical to just using vector 
+## embeddings, with very similar RMSE and R^2
+
+
+# RQ4: What is the best prediction of overall job satisfaction achievable using 
+# text reviews as source data?
+
+## Answer: The best performing model on this data set was Elastic Net with 
+## embeddings only (RMSE = ~.911, R^2 = ~0.386). Further, the fact that random
+## forest does not meaningfully improve prediction is notable, this suggests
+## that the embedding space is farily linear with respect to rating. The extra 
+## complexity of RF is not adding to the prediction of overall satisfaction.
+
+
+##### Limitations/what I would have done better. 
+# DTM, embeddings, and topic model were fit on the full dataset
+# prior to train/test split, representing a minor form of feature leakage.
+# This is common in NLP pipelines and likely has minimal practical impact
+# given more time, I would have split the datasets before the actual 
+# training, but this resulted in several errors and code refactoring that was
+# unobtainable given the time constraints. 
+
+# Also, the usage of the supercomputer would've been better. this would allow 
+# these algorithms to be trained on the full data set, not a random sample 
+# therein. 
+
+# Lastly, I would've liked to produce a shinyapp wherein one can interact with
+# the model outputs. 
 
