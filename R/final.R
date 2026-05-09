@@ -2,19 +2,19 @@
 library(tidyverse) # Used mostly for Dplyr and tibble functions - works with tidy models 
 library(rollama) # Best package for API calls to Ollama apparently 
 library(tidymodels) # ML tasks - used over caret because I want to build a tidymodels skill set 
-library(tm) # Robust text handling w/ built in corpus handling 
+library(tm) # Robust text handling w/ built in corpus handling - Chosen for robust VCorpus vs. tidytext unnesting
 library(textstem) # Lemmatizatoin
 library(RWeka) # n-gram tokenization 
-library(stm) # Topic modeling 
+library(stm) # Topic modeling - Allows covariate inclusion unlike standard LDA
 library(doParallel) # parallel processing (Mostly for random forest)
 
 # Data Import and Cleaning 
 
 ## Seed 
-set.seed(42)
+set.seed(42) # Ensures reproducibility 
 
 ## Import
-df_import <- read_csv("data/glassdoor_reviews.csv") # Initial import read_csv as it creates a tibble for tidyverse, and is better to work with 
+df_import <- read_csv("data/glassdoor_reviews.csv") # Initial import read_csv as it creates a tibble for tidyverse, and is better to work with, read.csv() is slower, fread() returns a data.frame 
 
 ## pre-processing
 df_clean <- df_import |>
@@ -35,13 +35,15 @@ df_clean <- df_import |>
     overall_rating,
     review_text
   ) |>
-  mutate(review_id = row_number()) # Create IDs to track reviews across dataframes and cleaning steps. 
+  mutate(review_id = row_number()) # Create IDs to track reviews across dataframes and cleaning steps. - row_number() over 1:nrow for tidy compatability
+### Used dplyr verbs over base R matrix subsetting for readbility and style guide. 
+### stringr over gsub() for simpler whitespace/truncation handling
 
 
 # Analysis 
 
 ## Create corpus 
-corpus <- VCorpus(VectorSource(df_clean$review_text)) # creates the corpus using VCorpus
+corpus <- VCorpus(VectorSource(df_clean$review_text)) # Creates volatile corpus in RAM; faster than PCorpus (uses disk)
 
 ## Text pre-processing using tm and other packages 
 corpus_prep <- corpus |>
@@ -51,6 +53,8 @@ corpus_prep <- corpus |>
   tm_map(content_transformer(lemmatize_strings)) |> # Lemmatizing for text stems 
   tm_map(removeWords, stopwords("en")) |> # Gets rid of stopwords 
   tm_map(stripWhitespace) # Gets rid of the whitespace from the lemmetization and the stopword removal 
+### # tm_map applies transformation functions across the corpus - chosen over base R lapply() because tm_map preserves the corpus object class and document metadata, whereas lapply() would accidentally coerce the corpus into a standard base R list and break downstream 'tm' functions.
+
 
 ## N-gram tokenizer 
 myTokenizer <- function(x) { 
