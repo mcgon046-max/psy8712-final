@@ -255,6 +255,8 @@ rq1_df <- df_clean |>
 write_rds(rq1_df, "data/rq1_prepped.rds") # save rds for data file incase of crash 
 
 rq1_df <- read_rds("data/rq1_prepped.rds") # saving the variable for checkingpointing 
+
+
 #### RQ2: Topics vs. Pure tokens 
 rq2_df <- df_clean |>
   select(
@@ -294,7 +296,10 @@ write_rds(rq3_df, "data/rq3_prepped.rds") # save rds for data file incase of cra
 rq3_df <- read_rds("data/rq3_prepped.rds") # same as above 
 
 ##### NOTE: I joined up the tables using an inner join to ensure that 
-##### everything was matched up and preped for the ML task. 
+##### everything was matched up (duplicates not included) and preped for the 
+##### ML task. 
+##### drop rows missing either tokens, topics or embeddings.
+
 
 ## Machine learning code RQ1:
 
@@ -307,8 +312,8 @@ data_split_rq1 <- initial_split(
   strata = overall_rating
 ) # initial split is like createdatapartition() wherein it splits the sample into 80/20 split based on the overall_rating variable 
 
-train_data <- training(data_split_rq1) # training() shows the actual training set 
-test_data <- testing(data_split_rq1) # testing() shows the actual testing dataset 
+train_data <- training(data_split_rq1) # training() shows the actual training set - same as trainData
+test_data <- testing(data_split_rq1) # testing() shows the actual testing dataset - same as testData
 
 ##### Cross-validation folds for hyperparameter tuning 
 cv_folds_rq1 <- vfold_cv(
@@ -319,7 +324,7 @@ cv_folds_rq1 <- vfold_cv(
 
 ### Tidymodels Recipes - the "blueprints" for data pre-processing (like caret preProcess)
 base_rec_rq1 <- recipe(
-    overall_rating ~ ., # prediction forumla 
+    overall_rating ~ ., # prediction formula 
     data = train_data
   ) |>
     update_role(
@@ -328,11 +333,11 @@ base_rec_rq1 <- recipe(
   ) |> # makes it so the review ID is not seen as a predictor variable 
     step_normalize(
       all_numeric_predictors()
-  ) # scales all predictors (required for elastic net)
+  ) # scales all predictors (normalizes them) (required for elastic net)
 
 ### Tokens only recipe 
 tokens_rec_rq1 <- base_rec_rq1 |>
-  step_rm(starts_with("dim_")) # Removes embeddings 
+  step_rm(starts_with("dim_")) # Removes embeddings - excludes variable from tibble
 
 ### embeddings only recipe
 embeds_rec_rq1 <- base_rec_rq1 |>
@@ -342,13 +347,13 @@ embeds_rec_rq1 <- base_rec_rq1 |>
 
 #### OLS 
 ols_spec_rq1 <- linear_reg() |>
-  set_engine("lm") # makes this linear regression and the model to OLS 
+  set_engine("lm") # makes this linear regression and the model to OLS - same as train(method = ...)
 
 #### Elsatic net 
 enet_spec_rq1 <- linear_reg(penalty = tune(), mixture = tune()) |> 
   set_engine("glmnet") # penalty is how much to shrink the coefficient, mixture is to find optimal alpha value leaving tune() empty means I'm not making any a priori assumptions about what this ought to be 
 
-#### Workflows - bundles together the model specs and the pre-processed data together - similar to train()
+#### Workflows - bundles together the model specs and the pre-processed data together - similar to train(), but has no direct correlary in caret. 
 
 ##### OLS tokens and emberddings 
 ols_wf_rq1_tok <- workflow() |>
@@ -385,13 +390,13 @@ ols_res_embed_rq1 <- fit_resamples(
 
 #### Elastic net 
 # grid 
-enet_grid_rq1 <- grid_regular(penalty(), mixture(), levels = 3) # 9 total combinations of penalties and mixtures (too many crashes R)
+enet_grid_rq1 <- grid_regular(penalty(), mixture(), levels = 3) # 9 total combinations of penalties and mixtures (too many crashes R) - caret: expand_grid() - generates hyperparameters 
 
 enet_res_tok_rq1 <- tune_grid(
   enet_wf_rq1_tok,
   resamples = cv_folds_rq1,
   grid = enet_grid_rq1
-) # fits on only tokens
+) # fits on only tokens - Executes grid search across resamples. same as train(tuneGrid = ...)
 
 enet_res_emb_rq1 <- tune_grid(
   enet_wf_rq1_emb,
@@ -402,7 +407,7 @@ enet_res_emb_rq1 <- tune_grid(
 ### RQ1 metric extraction 
 
 # OLS Metrics (Tokens)
-ols_tok_rmse_rq1 <- collect_metrics(ols_res_tok_rq1) |> # collect metrics in order to pull the trained model outputs 
+ols_tok_rmse_rq1 <- collect_metrics(ols_res_tok_rq1) |> # collect metrics in order to pull the trained model outputs - caret: model$results - extracts cross-validation performance metrics into a tibble
   filter(.metric == "rmse") |> # only looks at RMSE
   pull(mean) # Pulls the mean of the 10 cross-validated models 
 
@@ -422,7 +427,7 @@ ols_emb_rsq_rq1  <- collect_metrics(ols_res_embed_rq1) |>
 # Best Elastic Net metrics (tokens)
 enet_tok_rmse_rq1 <- show_best(
   enet_res_tok_rq1, metric = "rmse", n = 1 # looks for best rmse
-  ) |> 
+  ) |> # Isolates the optimal hyperparameter combination based on target metric - Caret: model$bestTune
   pull(mean)
 
 enet_tok_rsq_rq1  <- show_best(
@@ -465,7 +470,7 @@ best_params_emb_rq1 <- select_best(
 #### Elastic Net - finalizing workflows - looks for best workflow that works based on these hyperparameters 
 final_enet_wf_tok_rq1 <- finalize_workflow(
   enet_wf_rq1_tok, 
-  best_params_tok_rq1)
+  best_params_tok_rq1) # Updates the workflow with optimal parameters caret fits the final model automatically - no direct equivilent
 
 final_enet_wf_emb_rq1 <- finalize_workflow(
   enet_wf_rq1_emb, 
