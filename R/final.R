@@ -923,7 +923,8 @@ enet_top_rmse_rq3 <- show_best(
   ) |> 
   pull(mean) # same as above
 
-enet_top_rsq_rq3  <- show_best(enet_res_top_rq3, metric = "rsq", n = 1) |> pull(mean) # same as above
+enet_top_rsq_rq3  <- show_best(enet_res_top_rq3, metric = "rsq", n = 1) |> 
+  pull(mean) # same as above
 
 # Best Elastic Net metrics (Combined)
 enet_com_rmse_rq3 <- show_best(
@@ -1003,5 +1004,51 @@ test_metrics_enet_com_rq3 <- collect_metrics(final_fit_enet_com_rq3) # Combined
 
 
 ### Final results table 
+final_comparison_table_rq3 <- tibble(
+  Model = c("OLS", "OLS", "OLS", "Elastic Net", "Elastic Net", "Elastic Net"),
+  Feature_Set = c("Embeddings Only", "Topics Only", "Combined", "Embeddings Only", "Topics Only", "Combined"), 
+  
+  # Validation Metrics
+  Train_RMSE = c(ols_emb_rmse_rq3, ols_top_rmse_rq3, ols_com_rmse_rq3, enet_emb_rmse_rq3, enet_top_rmse_rq3, enet_com_rmse_rq3), 
+  Train_RSQ  = c(ols_emb_rsq_rq3, ols_top_rsq_rq3, ols_com_rsq_rq3, enet_emb_rsq_rq3, enet_top_rsq_rq3, enet_com_rsq_rq3), 
+  
+  # Test Metrics
+  Test_RMSE = c(
+    test_metrics_ols_emb_rq3 |> filter(.metric == "rmse") |> pull(.estimate), 
+    test_metrics_ols_top_rq3 |> filter(.metric == "rmse") |> pull(.estimate), 
+    test_metrics_ols_com_rq3 |> filter(.metric == "rmse") |> pull(.estimate), 
+    test_metrics_enet_emb_rq3 |> filter(.metric == "rmse") |> pull(.estimate), 
+    test_metrics_enet_top_rq3 |> filter(.metric == "rmse") |> pull(.estimate),
+    test_metrics_enet_com_rq3 |> filter(.metric == "rmse") |> pull(.estimate)
+  ),
+  Test_RSQ = c(
+    test_metrics_ols_emb_rq3 |> filter(.metric == "rsq") |> pull(.estimate), 
+    test_metrics_ols_top_rq3 |> filter(.metric == "rsq") |> pull(.estimate), 
+    test_metrics_ols_com_rq3 |> filter(.metric == "rsq") |> pull(.estimate), 
+    test_metrics_enet_emb_rq3 |> filter(.metric == "rsq") |> pull(.estimate), 
+    test_metrics_enet_top_rq3 |> filter(.metric == "rsq") |> pull(.estimate),
+    test_metrics_enet_com_rq3 |> filter(.metric == "rsq") |> pull(.estimate)
+  )
+) |> 
+  arrange(Test_RMSE) # same as above
+
+print(final_comparison_table_rq3) # same as above 
+
+final_comparison_table_rq3 |>
+  write_csv("out/rq3_results.csv") # same as above
+
+
+### Doing it all with ranger as well 
+
+#### Random forest engine 
+# Model specifications (hyperparameters) - trees set to 100 to reduce compute time and still be fairly robust 
+rf_spec <- rand_forest(mtry = tune(), min_n = tune(), trees = 100) |> 
+  set_engine("ranger", importance = "impurity") |> 
+  set_mode("regression") # This sets the tuning grid for random forest for the subsequent calls. Ranger is the engine, impurity tells the model to calculate the total error variance and shows which scores are the best for the model 
+
+# Tuning grid 
+rf_grid <- grid_regular(mtry(range = c(5, 50)), min_n(), levels = 3) # grid regular does a grid search with these parameters, mtry is about the number of predictors per split (Chosen to not have too many due to compute time, and to give variance in the data set), min_n() is the minimum number of data points (not assumeed apriori)
+
+
 
 
