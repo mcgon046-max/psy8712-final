@@ -74,7 +74,7 @@ df_clean <- df_clean[1:nrow(slimmed_dtm), ] # The DTM row count is the ground tr
 ## Converting back to dataframe 
 tokens_df <- slimmed_dtm|> 
   as.matrix() |> # Turns this into a matrix 
-  as.tibble() |> # Makes it a tibble for ML tasks, chosen as opposed to base R df due to tidy models
+  as_tibble() |> # Makes it a tibble for ML tasks, chosen as opposed to base R df due to tidy models
   rename_with(make.names) |> # Naming cols so that tidy models work 
   mutate(review_id = df_clean$review_id)
 
@@ -219,7 +219,7 @@ raw_embeddings <- embed_text(
 ### Formatting for ML 
 f_emb <- raw_embeddings |>
   as.matrix() |>
-  as.tibble() |> # Formatted for tidy model steps 
+  as_tibble() |> # Formatted for tidy model steps 
   mutate(review_id = df_clean$review_id) |>  
   filter(review_id %in% topics_df$review_id) # filtered for conformability
 
@@ -1220,4 +1220,5 @@ final_rf_table |>
   write_csv("out/random_forest_all_rqs_results.csv")
 
 
-
+# Final rds save
+save.image(file = "out/workspace.RData")
