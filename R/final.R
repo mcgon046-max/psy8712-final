@@ -1,6 +1,6 @@
 # Script Settings and Resources 
 library(tidyverse) # Used mostly for Dplyr and tibble functions - works with tidy models 
-library(rollama) # Best package for API calls to Ollama apparently 
+library(rollama) # Best package for API calls to Ollama, essentially a wrapper with premade functions for communicating with Ollama 
 library(tidymodels) # ML tasks - used over caret because I want to build a tidymodels skill set 
 library(tm) # Robust text handling w/ built in corpus handling - Chosen for robust VCorpus vs. tidytext unnesting
 library(textstem) # Lemmatizatoin
@@ -69,10 +69,10 @@ myTokenizer <- function(x) {
 DTM <- DocumentTermMatrix(
   corpus_prep, 
   control = list(tokenize = myTokenizer)
-  )
+  ) # Converts corpus into sparce matrix representing word counts - chosen over TermDocumentMatrix because tidymodels/machine learning algorithms strictly require rows to be observations (documents) and columns to be variables (terms)
 
 ## Removing sparse terms 
-slimmed_dtm <- removeSparseTerms(DTM, .95) # set the threshold to .95 meaning term is allowed to be empty in 95% of text 
+slimmed_dtm <- removeSparseTerms(DTM, .95) # set the threshold to .95 meaning term is allowed to be empty in 95% of text - reduces dimensionality and overfitting
 
 ## Dimension fitting 
 df_clean <- df_clean[1:nrow(slimmed_dtm), ] # The DTM row count is the ground truth — subset df_clean to match for dimension purposes
@@ -81,13 +81,13 @@ df_clean <- df_clean[1:nrow(slimmed_dtm), ] # The DTM row count is the ground tr
 tokens_df <- slimmed_dtm|> 
   as.matrix() |> # Turns this into a matrix 
   as_tibble() |> # Makes it a tibble for ML tasks, chosen as opposed to base R df due to tidy models
-  rename_with(make.names) |> # Naming cols so that tidy models work 
+  rename_with(make.names) |> #  chosen over leaving raw strings because tidymodels engines (like ranger or lm) will crash if column names contain spaces, punctuation, or start with numbers.
   mutate(review_id = df_clean$review_id)
 
 
 
 ## topic analysis 
-dfm2stm <- readCorpus(slimmed_dtm, type = "slam") # Read corpus to reformat the dtm for the k search
+dfm2stm <- readCorpus(slimmed_dtm, type = "slam") # Converts DTM to slam format required by stm vs. default matrix.
 
 ## K-search algo 
 # kresult <- searchK(
@@ -195,7 +195,7 @@ topic_table <- tibble(
 
 ## CSV output for git scraping 
 topic_table |> 
-  write_csv("out/topics.csv")
+  write_csv("out/topics.csv") #Used over write.csv() to drop rownames and export faster.
 
 ## Theta matrix for ML 
 topics_df <- as_tibble(topic_model$theta) |> # The theta matrix essentially tells us what proportion of each topic a given string of review text falls into. 
@@ -215,6 +215,8 @@ df_clean <- df_clean |>
 
 ### Pulling the model 
 pull_model("nomic-embed-text") # pull_model actually calls the Ollama api to get it loaded into my R enviornment 
+
+
 
 ### Generating the embeddings 
 raw_embeddings <- embed_text(
