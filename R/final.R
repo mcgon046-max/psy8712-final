@@ -1125,7 +1125,41 @@ rf_res_com_rq3 <- tune_grid(
   resamples = cv_folds_rq3, 
   grid = rf_grid)
 
-# Shut down the parallel cluster to free up your CPU 
+# Shut down the parallel cluster 
 stopImplicitCluster()
 
- 
+### RQ1 Final Fits
+final_rf_tok_rq1 <- last_fit(
+  finalize_workflow(rf_wf_tok_rq1, select_best(rf_res_tok_rq1, metric = "rmse")), 
+  split = data_split_rq1
+)
+final_rf_emb_rq1 <- last_fit(
+  finalize_workflow(rf_wf_emb_rq1, select_best(rf_res_emb_rq1, metric = "rmse")), 
+  split = data_split_rq1
+)
+
+### RQ2 Final Fits
+final_rf_tok_rq2 <- last_fit(
+  finalize_workflow(rf_wf_tok_rq2, select_best(rf_res_tok_rq2, metric = "rmse")), 
+  split = data_split_rq2
+)
+final_rf_top_rq2 <- last_fit(
+  finalize_workflow(rf_wf_top_rq2, select_best(rf_res_top_rq2, metric = "rmse")), 
+  split = data_split_rq2
+)
+
+### RQ3 Final Fits
+final_rf_emb_rq3 <- last_fit(
+  finalize_workflow(rf_wf_emb_rq3, select_best(rf_res_emb_rq3, metric = "rmse")), 
+  split = data_split_rq3
+)
+final_rf_top_rq3 <- last_fit(
+  finalize_workflow(rf_wf_top_rq3, select_best(rf_res_top_rq3, metric = "rmse")), 
+  split = data_split_rq3
+)
+final_rf_com_rq3 <- last_fit(
+  finalize_workflow(rf_wf_com_rq3, select_best(rf_res_com_rq3, metric = "rmse")), 
+  split = data_split_rq3
+)
+
+
