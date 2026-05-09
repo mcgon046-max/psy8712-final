@@ -295,6 +295,10 @@ write_rds(rq3_df, "data/rq3_prepped.rds") # save rds for data file incase of cra
 
 rq3_df <- read_rds("data/rq3_prepped.rds") # same as above 
 
+### saving data.RDS as per assignment requirements:
+saveRDS(rq3_df, file = "out/data.RDS")
+
+
 ##### NOTE: I joined up the tables using an inner join to ensure that 
 ##### everything was matched up (duplicates not included) and preped for the 
 ##### ML task. 
