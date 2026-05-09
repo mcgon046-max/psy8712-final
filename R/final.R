@@ -748,3 +748,186 @@ final_comparison_table_rq2 |>
 
 ## Machine learning code for RQ3:
 
+### Data split and CV folds 
+data_split_rq3 <- initial_split(
+  rq3_df,
+  prop = .8,
+  strata = overall_rating
+) # same as above (Could have used a single split for all three RQs but I thought resplitting seemed more robust)
+
+train_data_rq3 <- training(data_split_rq3) # same as above 
+test_data_rq3 <- testing(data_split_rq3) # same as above
+
+
+##### Cross-validation folds for hyperparameter tuning 
+cv_folds_rq3 <- vfold_cv(
+  train_data_rq3, 
+  v = 10, 
+  strata = overall_rating
+) # same as above
+
+### Recepies 
+base_rec_rq3 <- recipe(
+  overall_rating ~ ., 
+  data = train_data_rq3
+) |>
+  update_role(
+    review_id, 
+    new_role = "ID"
+  ) |> 
+  step_normalize(
+    all_numeric_predictors()
+  ) # same as above
+
+### Embeddings only recipe 
+embeds_rec_rq3 <- base_rec_rq3 |>
+  step_rm(all_predictors(), -starts_with("dim_")) # same as above 
+
+### Topics only recipe
+topics_rec_rq3 <- base_rec_rq3 |>
+  step_rm(all_predictors(), -starts_with("topic_")) # same as above 
+
+### Combined (Embeddings + Topics) recipe
+combined_rec_rq3 <- base_rec_rq3 
+
+
+### Model Specs
+#### OLS 
+ols_spec_rq3 <- linear_reg() |>
+  set_engine("lm") # same as above 
+
+#### Elastic net 
+enet_spec_rq3 <- linear_reg(penalty = tune(), mixture = tune()) |> 
+  set_engine("glmnet") # same as above
+
+
+### Workflows 
+
+#### OLS 
+ols_wf_rq3_emb <- workflow() |> 
+  add_recipe(embeds_rec_rq3) |> 
+  add_model(ols_spec_rq3) # same as above 
+
+ols_wf_rq3_top <- workflow() |> 
+  add_recipe(topics_rec_rq3) |> 
+  add_model(ols_spec_rq3) # same as above 
+
+ols_wf_rq3_com <- workflow() |> 
+  add_recipe(combined_rec_rq3) |> 
+  add_model(ols_spec_rq3) # Combined
+
+
+#### Elastic Net 
+enet_wf_rq3_emb <- workflow() |> 
+  add_recipe(embeds_rec_rq3) |> 
+  add_model(enet_spec_rq3) # same as above
+
+enet_wf_rq3_top <- workflow() |> 
+  add_recipe(topics_rec_rq3) |> 
+  add_model(enet_spec_rq3) # same as above 
+
+enet_wf_rq3_com <- workflow() |> 
+  add_recipe(combined_rec_rq3) |> 
+  add_model(enet_spec_rq3) # Combined
+
+
+### Model Execution 
+
+#### OLS 
+ols_res_emb_rq3 <- fit_resamples(
+  ols_wf_rq3_emb, 
+  resamples = cv_folds_rq3) # same as above 
+
+ols_res_top_rq3 <- fit_resamples(
+  ols_wf_rq3_top, 
+  resamples = cv_folds_rq3) # same as above
+
+ols_res_com_rq3 <- fit_resamples(
+  ols_wf_rq3_com, 
+  resamples = cv_folds_rq3) # Combined
+
+#### Elastic Net 
+# grid 
+enet_grid_rq3 <- grid_regular(penalty(), mixture(), levels = 3) # same as above
+
+enet_res_emb_rq3 <- tune_grid(
+  enet_wf_rq3_emb, 
+  resamples = cv_folds_rq3, 
+  grid = enet_grid_rq3) # same as above
+
+enet_res_top_rq3 <- tune_grid(
+  enet_wf_rq3_top, 
+  resamples = cv_folds_rq3, 
+  grid = enet_grid_rq3) # same as above 
+
+enet_res_com_rq3 <- tune_grid(
+  enet_wf_rq3_com, 
+  resamples = cv_folds_rq3, 
+  grid = enet_grid_rq3) # Combined
+
+### RQ3 model extraction 
+
+#### OLS metrics (embeddings)
+# OLS Metrics (Embeddings)
+ols_emb_rmse_rq3 <- collect_metrics(
+  ols_res_emb_rq3
+  ) |> 
+  filter(.metric == "rmse"
+  ) |> pull(mean) # same as above 
+
+ols_emb_rsq_rq3  <- collect_metrics(ols_res_emb_rq3) |> 
+  filter(.metric == "rsq"
+  ) |> 
+  pull(mean) # same as above
+
+# OLS Metrics (Topics)
+ols_top_rmse_rq3 <- collect_metrics(
+  ols_res_top_rq3
+  ) |> 
+  filter(.metric == "rmse"
+  ) |> 
+  pull(mean) # same as above 
+
+ols_top_rsq_rq3  <- collect_metrics(ols_res_top_rq3) |> 
+  filter(.metric == "rsq"
+  ) |> 
+  pull(mean) # same as above 
+
+# OLS Metrics (Combined)
+ols_com_rmse_rq3 <- collect_metrics(ols_res_com_rq3) |> 
+  filter(.metric == "rmse"
+  ) |> 
+  pull(mean) # Combined
+
+ols_com_rsq_rq3  <- collect_metrics(ols_res_com_rq3) |> 
+  filter(.metric == "rsq"
+  ) |> 
+  pull(mean) # Combined
+
+# Best Elastic Net metrics (Embeddings)
+enet_emb_rmse_rq3 <- show_best(
+  enet_res_emb_rq3, 
+  metric = "rmse", n = 1
+  ) |> 
+  pull(mean) # same as above
+
+enet_emb_rsq_rq3  <- show_best(
+  enet_res_emb_rq3, metric = "rsq", n = 1
+  ) |> 
+  pull(mean) # same as above
+
+# Best Elastic Net metrics (Topics)
+enet_top_rmse_rq3 <- show_best(
+  enet_res_top_rq3, metric = "rmse", n = 1
+  ) |> 
+  pull(mean) # same as above
+
+enet_top_rsq_rq3  <- show_best(enet_res_top_rq3, metric = "rsq", n = 1) |> pull(mean) # same as above
+
+# Best Elastic Net metrics (Combined)
+enet_com_rmse_rq3 <- show_best(enet_res_com_rq3, metric = "rmse", n = 1) |> pull(mean) # Combined
+enet_com_rsq_rq3  <- show_best(enet_res_com_rq3, metric = "rsq", n = 1) |> pull(mean) # Combined
+
+
+
+
