@@ -295,9 +295,15 @@ write_rds(rq3_df, "data/rq3_prepped.rds") # save rds for data file incase of cra
 
 rq3_df <- read_rds("data/rq3_prepped.rds") # same as above 
 
-### saving data.RDS as per assignment requirements:
-saveRDS(rq3_df, file = "out/data.RDS")
+### saving data.RDS as per assignment requirements - Need to create df with all variables
+# Extracting topics for rq2 to join to rq1 in order to have everything 
+topics_to_join <- rq2_df |> 
+  select(review_id, starts_with("topic_"))
 
+master_df <- rq1_df |> 
+  inner_join(topics_to_join, by = "review_id")
+
+# saveRDS(master_df, file = "out/data.RDS") #commented out as per assignment requirements 
 
 ##### NOTE: I joined up the tables using an inner join to ensure that 
 ##### everything was matched up (duplicates not included) and preped for the 
