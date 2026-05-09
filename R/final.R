@@ -1,5 +1,5 @@
 # Script Settings and Resources 
-library(tidyverse)
+library(tidyverse) # Used mostly for Dplyr and tibble functions - works with tidy models 
 library(rollama) # Best package for API calls to Ollama apparently 
 library(tidymodels) # ML tasks - used over caret because I want to build a tidymodels skill set 
 library(tm) # Robust text handling w/ built in corpus handling 
