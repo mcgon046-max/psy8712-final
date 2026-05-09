@@ -1058,19 +1058,32 @@ rf_grid <- grid_regular(mtry(range = c(5, 50)), min_n(), levels = 3) # grid regu
 
 ### RQ1 Workflows (Tokens vs. Embeddings)
 rf_wf_tok_rq1 <- workflow() |> add_recipe(
-  tokens_rec_rq1
+  tokens_rec_rq1 
   ) |> 
   add_model(rf_spec)
 rf_wf_emb_rq1 <- workflow() |> add_recipe(embeds_rec_rq1) |> add_model(rf_spec)
 
 ### RQ2 Workflows (Tokens vs. Topics)
-rf_wf_tok_rq2 <- workflow() |> add_recipe(tokens_rec_rq2) |> add_model(rf_spec)
-rf_wf_top_rq2 <- workflow() |> add_recipe(topics_rec_rq2) |> add_model(rf_spec)
+rf_wf_tok_rq2 <- workflow() |> 
+  add_recipe(tokens_rec_rq2) |> 
+  add_model(rf_spec)
+
+rf_wf_top_rq2 <- workflow() |> 
+  add_recipe(topics_rec_rq2) |> 
+  add_model(rf_spec)
 
 ### RQ3 Workflows (Embeddings vs. Topics vs. Combined)
-rf_wf_emb_rq3 <- workflow() |> add_recipe(embeds_rec_rq3) |> add_model(rf_spec)
-rf_wf_top_rq3 <- workflow() |> add_recipe(topics_rec_rq3) |> add_model(rf_spec)
-rf_wf_com_rq3 <- workflow() |> add_recipe(combined_rec_rq3) |> add_model(rf_spec)
+rf_wf_emb_rq3 <- workflow() |> 
+  add_recipe(embeds_rec_rq3) |>
+  add_model(rf_spec)
+
+rf_wf_top_rq3 <- workflow() |> 
+  add_recipe(topics_rec_rq3) |> 
+  add_model(rf_spec)
+
+rf_wf_com_rq3 <- workflow() |> 
+  add_recipe(combined_rec_rq3) |> 
+  add_model(rf_spec)
 
 
 ### Tuning - for all RQs
@@ -1097,11 +1110,22 @@ rf_res_top_rq2 <- tune_grid(
   grid = rf_grid)
 
 # RQ3
-rf_res_emb_rq3 <- tune_grid(rf_wf_emb_rq3, resamples = cv_folds_rq3, grid = rf_grid)
-rf_res_top_rq3 <- tune_grid(rf_wf_top_rq3, resamples = cv_folds_rq3, grid = rf_grid)
-rf_res_com_rq3 <- tune_grid(rf_wf_com_rq3, resamples = cv_folds_rq3, grid = rf_grid)
+rf_res_emb_rq3 <- tune_grid(
+  rf_wf_emb_rq3, 
+  resamples = cv_folds_rq3, 
+  grid = rf_grid)
+
+rf_res_top_rq3 <- tune_grid(
+  rf_wf_top_rq3, 
+  resamples = cv_folds_rq3, 
+  grid = rf_grid)
+
+rf_res_com_rq3 <- tune_grid(
+  rf_wf_com_rq3, 
+  resamples = cv_folds_rq3, 
+  grid = rf_grid)
 
 # Shut down the parallel cluster to free up your CPU 
 stopImplicitCluster()
 
-
+ 
