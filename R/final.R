@@ -1047,7 +1047,39 @@ rf_spec <- rand_forest(mtry = tune(), min_n = tune(), trees = 100) |>
   set_mode("regression") # This sets the tuning grid for random forest for the subsequent calls. Ranger is the engine, impurity tells the model to calculate the total error variance and shows which scores are the best for the model 
 
 # Tuning grid 
-rf_grid <- grid_regular(mtry(range = c(5, 50)), min_n(), levels = 3) # grid regular does a grid search with these parameters, mtry is about the number of predictors per split (Chosen to not have too many due to compute time, and to give variance in the data set), min_n() is the minimum number of data points (not assumeed apriori)
+rf_grid <- grid_regular(mtry(range = c(5, 50)), min_n(), levels = 3) # grid regular does a grid search with these parameters, mtry is about the number of predictors per split (Chosen to not have too many due to compute time, and to give variance in the data set), min_n() is the minimum number of data points (not assumeed a priori, actually uses the defaults(usually between 2 and 40)
+
+
+### RQ1: tokens vs. embeddings 
+# Workflows (reusing RQ1 recepies)
+rf_wf_tok_rq1 <- workflow() |> 
+  add_recipe(tokens_rec_rq1) |> 
+  add_model(rf_spec)
+
+rf_wf_emb_rq1 <- workflow() |> 
+  add_recipe(embeds_rec_rq1) |> 
+  add_model(rf_spec)
+
+# Tuning
+rf_res_tok_rq1 <- tune_grid(
+  rf_wf_tok_rq1, 
+  resamples = cv_folds_rq1, 
+  grid = rf_grid) # Tests best model hyperparemeters using tune_grid() - embeddings
+
+rf_res_emb_rq1 <- tune_grid(
+  rf_wf_emb_rq1, 
+  resamples = cv_folds_rq1, 
+  grid = rf_grid) # same as above but for embeddings 
+
+# Final Fits
+final_rf_tok_rq1 <- last_fit(
+  finalize_workflow(rf_wf_tok_rq1, select_best(rf_res_tok_rq1, metric = "rmse")), 
+  split = data_split_rq1
+)
+final_rf_emb_rq1 <- last_fit(
+  finalize_workflow(rf_wf_emb_rq1, select_best(rf_res_emb_rq1, metric = "rmse")), 
+  split = data_split_rq1
+)
 
 
 
