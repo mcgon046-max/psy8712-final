@@ -1162,4 +1162,62 @@ final_rf_com_rq3 <- last_fit(
   split = data_split_rq3
 )
 
+### Final Master Table
+final_rf_table <- tibble(
+  Research_Question = c("RQ1", "RQ1", "RQ2", "RQ2", "RQ3", "RQ3", "RQ3"),
+  Feature_Set = c("Tokens", "Embeddings", "Tokens", "Topics", "Embeddings", "Topics", "Combined"),
+  
+  # Train RMSE (Best from CV folds)
+  Train_RMSE = c(
+    show_best(rf_res_tok_rq1, metric = "rmse", n = 1) |> pull(mean),
+    show_best(rf_res_emb_rq1, metric = "rmse", n = 1) |> pull(mean),
+    show_best(rf_res_tok_rq2, metric = "rmse", n = 1) |> pull(mean),
+    show_best(rf_res_top_rq2, metric = "rmse", n = 1) |> pull(mean),
+    show_best(rf_res_emb_rq3, metric = "rmse", n = 1) |> pull(mean),
+    show_best(rf_res_top_rq3, metric = "rmse", n = 1) |> pull(mean),
+    show_best(rf_res_com_rq3, metric = "rmse", n = 1) |> pull(mean)
+  ),
+  
+  # Train RSQ
+  Train_RSQ = c(
+    show_best(rf_res_tok_rq1, metric = "rsq", n = 1) |> pull(mean),
+    show_best(rf_res_emb_rq1, metric = "rsq", n = 1) |> pull(mean),
+    show_best(rf_res_tok_rq2, metric = "rsq", n = 1) |> pull(mean),
+    show_best(rf_res_top_rq2, metric = "rsq", n = 1) |> pull(mean),
+    show_best(rf_res_emb_rq3, metric = "rsq", n = 1) |> pull(mean),
+    show_best(rf_res_top_rq3, metric = "rsq", n = 1) |> pull(mean),
+    show_best(rf_res_com_rq3, metric = "rsq", n = 1) |> pull(mean)
+  ),
+  
+  # Test RMSE (From holdout split)
+  Test_RMSE = c(
+    collect_metrics(final_rf_tok_rq1) |> filter(.metric == "rmse") |> pull(.estimate),
+    collect_metrics(final_rf_emb_rq1) |> filter(.metric == "rmse") |> pull(.estimate),
+    collect_metrics(final_rf_tok_rq2) |> filter(.metric == "rmse") |> pull(.estimate),
+    collect_metrics(final_rf_top_rq2) |> filter(.metric == "rmse") |> pull(.estimate),
+    collect_metrics(final_rf_emb_rq3) |> filter(.metric == "rmse") |> pull(.estimate),
+    collect_metrics(final_rf_top_rq3) |> filter(.metric == "rmse") |> pull(.estimate),
+    collect_metrics(final_rf_com_rq3) |> filter(.metric == "rmse") |> pull(.estimate)
+  ),
+  
+  # Test RSQ
+  Test_RSQ = c(
+    collect_metrics(final_rf_tok_rq1) |> filter(.metric == "rsq") |> pull(.estimate),
+    collect_metrics(final_rf_emb_rq1) |> filter(.metric == "rsq") |> pull(.estimate),
+    collect_metrics(final_rf_tok_rq2) |> filter(.metric == "rsq") |> pull(.estimate),
+    collect_metrics(final_rf_top_rq2) |> filter(.metric == "rsq") |> pull(.estimate),
+    collect_metrics(final_rf_emb_rq3) |> filter(.metric == "rsq") |> pull(.estimate),
+    collect_metrics(final_rf_top_rq3) |> filter(.metric == "rsq") |> pull(.estimate),
+    collect_metrics(final_rf_com_rq3) |> filter(.metric == "rsq") |> pull(.estimate)
+  )
+) |> 
+  arrange(Research_Question, Test_RMSE)
+
+# print and save
+print(final_rf_table)
+
+final_rf_table |>
+  write_csv("out/random_forest_all_rqs_results.csv")
+
+
 
