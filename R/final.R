@@ -865,6 +865,7 @@ enet_res_com_rq3 <- tune_grid(
   resamples = cv_folds_rq3, 
   grid = enet_grid_rq3) # Combined
 
+
 ### RQ3 model extraction 
 
 #### OLS metrics (embeddings)
@@ -925,9 +926,82 @@ enet_top_rmse_rq3 <- show_best(
 enet_top_rsq_rq3  <- show_best(enet_res_top_rq3, metric = "rsq", n = 1) |> pull(mean) # same as above
 
 # Best Elastic Net metrics (Combined)
-enet_com_rmse_rq3 <- show_best(enet_res_com_rq3, metric = "rmse", n = 1) |> pull(mean) # Combined
-enet_com_rsq_rq3  <- show_best(enet_res_com_rq3, metric = "rsq", n = 1) |> pull(mean) # Combined
+enet_com_rmse_rq3 <- show_best(
+  enet_res_com_rq3, 
+  metric = "rmse", n = 1
+  ) |> 
+  pull(mean) # Combined
+
+enet_com_rsq_rq3  <- show_best(
+  enet_res_com_rq3, 
+  metric = "rsq", n = 1
+  ) |> 
+  pull(mean) # Combined
+
+### Train vs. test 
+#### OLS - last fits
+final_fit_ols_emb_rq3 <- last_fit(
+  ols_wf_rq3_emb, 
+  split = data_split_rq3) # same as above 
+
+final_fit_ols_top_rq3 <- last_fit(
+  ols_wf_rq3_top, 
+  split = data_split_rq3) # same as above 
+
+final_fit_ols_com_rq3 <- last_fit(
+  ols_wf_rq3_com, 
+  split = data_split_rq3) # Combined
 
 
+#### Elastic net - best parameters 
+best_params_emb_rq3 <- select_best(
+  enet_res_emb_rq3, 
+  metric = "rmse") # same as above
+
+best_params_top_rq3 <- select_best(
+  enet_res_top_rq3, 
+  metric = "rmse") # same as above 
+
+best_params_com_rq3 <- select_best(
+  enet_res_com_rq3, 
+  metric = "rmse") # Combined
+
+
+#### Elastic Net - finalizing workflows 
+final_enet_wf_emb_rq3 <- finalize_workflow(
+  enet_wf_rq3_emb, 
+  best_params_emb_rq3) # same as above
+
+final_enet_wf_top_rq3 <- finalize_workflow(
+  enet_wf_rq3_top, 
+  best_params_top_rq3) # same as above
+
+final_enet_wf_com_rq3 <- finalize_workflow(
+  enet_wf_rq3_com, 
+  best_params_com_rq3) # Combined
+
+#### Elastic Net - final fit 
+final_fit_enet_emb_rq3 <- last_fit(
+  final_enet_wf_emb_rq3, 
+  split = data_split_rq3) # same as above
+
+final_fit_enet_top_rq3 <- last_fit(
+  final_enet_wf_top_rq3, 
+  split = data_split_rq3) # same as above
+
+final_fit_enet_com_rq3 <- last_fit(
+  final_enet_wf_com_rq3, 
+  split = data_split_rq3) # Combined
+
+#### Collecting test metrics 
+test_metrics_ols_emb_rq3  <- collect_metrics(final_fit_ols_emb_rq3) # same as above
+test_metrics_ols_top_rq3  <- collect_metrics(final_fit_ols_top_rq3) # same as above
+test_metrics_ols_com_rq3  <- collect_metrics(final_fit_ols_com_rq3) # Combined
+test_metrics_enet_emb_rq3 <- collect_metrics(final_fit_enet_emb_rq3) # same as above
+test_metrics_enet_top_rq3 <- collect_metrics(final_fit_enet_top_rq3) # same as above
+test_metrics_enet_com_rq3 <- collect_metrics(final_fit_enet_com_rq3) # Combined
+
+
+### Final results table 
 
 
