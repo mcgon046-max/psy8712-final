@@ -1291,6 +1291,8 @@ save.image(file = "out/workspace.RData")
 # these algorithms to be trained on the full data set, not a random sample 
 # therein. 
 
-# Lastly, I would've liked to produce a shinyapp wherein one can interact with
+# Further, I would've liked to produce a shinyapp wherein one can interact with
 # the model outputs. 
 
+# Lastly, the fact that this script is around 1300 lines long suggests that
+# there were inefficencies and redundencies in the code. 
