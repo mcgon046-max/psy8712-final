@@ -1041,7 +1041,7 @@ final_comparison_table_rq3 |>
 
 ### Doing it all with ranger as well 
 
-#### Parallel calls 
+#### Parallel calls - needed for ranger, takes too much time if I don't 
 all_cores <- parallel::detectCores(logical = FALSE) # Detecting cores (its 8)
 registerDoParallel(cores = 7) # Reserving 7 cores 
 getDoParWorkers() # check to ensure that the cores are given to the enviorment 
@@ -1056,5 +1056,52 @@ rf_spec <- rand_forest(mtry = tune(), min_n = tune(), trees = 100) |>
 rf_grid <- grid_regular(mtry(range = c(5, 50)), min_n(), levels = 3) # grid regular does a grid search with these parameters, mtry is about the number of predictors per split (Chosen to not have too many due to compute time, and to give variance in the data set), min_n() is the minimum number of data points (not assumeed a priori, actually uses the defaults(usually between 2 and 40)
 
 
+### RQ1 Workflows (Tokens vs. Embeddings)
+rf_wf_tok_rq1 <- workflow() |> add_recipe(
+  tokens_rec_rq1
+  ) |> 
+  add_model(rf_spec)
+rf_wf_emb_rq1 <- workflow() |> add_recipe(embeds_rec_rq1) |> add_model(rf_spec)
+
+### RQ2 Workflows (Tokens vs. Topics)
+rf_wf_tok_rq2 <- workflow() |> add_recipe(tokens_rec_rq2) |> add_model(rf_spec)
+rf_wf_top_rq2 <- workflow() |> add_recipe(topics_rec_rq2) |> add_model(rf_spec)
+
+### RQ3 Workflows (Embeddings vs. Topics vs. Combined)
+rf_wf_emb_rq3 <- workflow() |> add_recipe(embeds_rec_rq3) |> add_model(rf_spec)
+rf_wf_top_rq3 <- workflow() |> add_recipe(topics_rec_rq3) |> add_model(rf_spec)
+rf_wf_com_rq3 <- workflow() |> add_recipe(combined_rec_rq3) |> add_model(rf_spec)
+
+
+### Tuning - for all RQs
+# RQ1
+rf_res_tok_rq1 <- tune_grid(
+  rf_wf_tok_rq1, 
+  resamples = cv_folds_rq1, 
+  grid = rf_grid)
+
+rf_res_emb_rq1 <- tune_grid(
+  rf_wf_emb_rq1, 
+  resamples = cv_folds_rq1, 
+  grid = rf_grid)
+
+# RQ2
+rf_res_tok_rq2 <- tune_grid(
+  rf_wf_tok_rq2, 
+  resamples = cv_folds_rq2, 
+  grid = rf_grid)
+
+rf_res_top_rq2 <- tune_grid(
+  rf_wf_top_rq2, 
+  resamples = cv_folds_rq2, 
+  grid = rf_grid)
+
+# RQ3
+rf_res_emb_rq3 <- tune_grid(rf_wf_emb_rq3, resamples = cv_folds_rq3, grid = rf_grid)
+rf_res_top_rq3 <- tune_grid(rf_wf_top_rq3, resamples = cv_folds_rq3, grid = rf_grid)
+rf_res_com_rq3 <- tune_grid(rf_wf_com_rq3, resamples = cv_folds_rq3, grid = rf_grid)
+
+# Shut down the parallel cluster to free up your CPU 
+stopImplicitCluster()
 
 
