@@ -53,7 +53,7 @@ corpus_prep <- corpus |>
   tm_map(content_transformer(lemmatize_strings)) |> # Lemmatizing for text stems 
   tm_map(removeWords, stopwords("en")) |> # Gets rid of stopwords 
   tm_map(stripWhitespace) # Gets rid of the whitespace from the lemmetization and the stopword removal 
-### # tm_map applies transformation functions across the corpus - chosen over base R lapply() because tm_map preserves the corpus object class and document metadata, whereas lapply() would accidentally coerce the corpus into a standard base R list and break downstream 'tm' functions.
+### # tm_map applies transformation functions across the corpus - chosen over base R lapply() because tm_map preserves the corpus object class and document metadata, whereas lapply() would  coerce the corpus into a standard base R list and break downstream tm functions.
 
 
 ## N-gram tokenizer 
@@ -61,7 +61,9 @@ myTokenizer <- function(x) {
   NGramTokenizer(
     x, Weka_control(min=1, max=2
   )) 
-}
+} # Generates rolling bi-grams using RWeka - chosen over base R strsplit() (which requires complex regex for n-grams) and tidytext::unnest_tokens() because RWeka works well with the tm package's DTM control arguments.
+
+
 
 ## Document term matrix creation (makes text a matrix)
 DTM <- DocumentTermMatrix(
