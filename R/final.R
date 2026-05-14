@@ -1244,6 +1244,12 @@ final_rf_table |>
 
 
 # Final rds save
+
+## Loading it in so entire script doesn't need to run - to push to github
+load("out/workspace.RData")
+
+## Removing text data before save
+rm(df_import, df_clean, corpus, corpus_prep, DTM, slimmed_dtm, dfm2stm, raw_embeddings, f_emb, tokens_df)
 save.image(file = "out/workspace.RData")
 
 

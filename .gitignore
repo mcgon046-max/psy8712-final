@@ -7,5 +7,4 @@ data/rq1_prepped.rds
 data/rq2_prepped.rds
 data/rq3_prepped.rds
 # Ignore large data files and R workspaces
-out/data.RDS
 out/workspace.RData
